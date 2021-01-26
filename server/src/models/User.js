@@ -1,7 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { compare, hash } from 'bcryptjs';
 import { sign } from 'jsonwebtoken';
-import { SECRET } from '../constants';
 import { randomBytes } from 'crypto';
 import { pick } from 'lodash';
 
@@ -44,7 +43,7 @@ const userSchema = new Schema(
   { timestamps: true },
 );
 
-userSchema.pre('save', async function (name) {
+userSchema.pre('save', async function (next) {
   let user = this;
   if (!user.isModified('password')) return next();
   user.password = await hash(user.password, 12);
@@ -62,7 +61,7 @@ userSchema.methods.generateJWT = async function () {
     name: this.name,
     id: this._id,
   };
-  return await sign(payload, SECRET, { expiresIn: '1w' });
+  return await sign(payload, process.env.SECRET, { expiresIn: '1w' });
 };
 
 userSchema.methods.generatePasswordReset = function () {
@@ -74,5 +73,4 @@ userSchema.methods.getUserInfo = function () {
   return pick(this, ['_id', 'username', 'email', 'name']);
 };
 
-const User = model('User', userSchema);
-export default User;
+export default model('User', userSchema);

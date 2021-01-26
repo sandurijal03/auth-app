@@ -1,19 +1,17 @@
-import { check, param } from 'express-validator';
+import { check } from 'express-validator';
 
 const name = check('name', 'Name is required').not().isEmpty();
 
 const username = check('username', 'Username is required').not().isEmpty();
 
-const email = check('name', 'Please provide vaalid email address')
-  .not()
-  .isEmail()
-  .isEmpty();
+const email = check('email', 'Please provide valid email address').isEmail();
 
-const password = check('password', 'Password is required of min length')
-  .not()
-  .isLength({
-    min: 6,
-  });
+const password = check(
+  'password',
+  'Password is required of min length',
+).isLength({
+  min: 6,
+});
 
 export const RegisterValidations = [name, username, email, password];
-export const AuthenticationValidation = [username, password];
+export const AuthenticateValidation = [username, password];
