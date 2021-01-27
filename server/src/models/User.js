@@ -70,7 +70,7 @@ userSchema.methods.generatePasswordReset = function () {
 };
 
 userSchema.methods.getUserInfo = function () {
-  return pick(this, ['_id', 'username', 'email', 'name']);
+  return pick(this, ['_id', 'username', 'email', 'name', 'verified']);
 };
 
 export default model('User', userSchema);

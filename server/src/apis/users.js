@@ -1,15 +1,23 @@
 import { Router } from 'express';
-import { RegisterValidations } from '../validators';
+import { AuthenticateValidation, RegisterValidation } from '../validators';
 import { User } from '../models';
 import Validator from '../middlewares/validator-middleware';
 import { randomBytes } from 'crypto';
 import sendMail from '../functions/email-sender';
+import { join } from 'path';
 
 const router = Router();
 
+/**
+ * @description to create a new User Account
+ * @api /users/api/register
+ * @access  Public
+ * @type  POST
+ */
+
 router.post(
   '/api/register',
-  RegisterValidations,
+  RegisterValidation,
   Validator,
   async (req, res) => {
     try {
@@ -40,12 +48,14 @@ router.post(
       console.log(user);
       // send email to user with verification link
       let html = `
-      <h1>Hello ${user.username}</h1>
-      <p>Please click the link to verify your account</p>
-      <a href="/${process.env.DOMAIN}users/verify-now/${user.userVerificationCode}"> </a>
+      <div>
+        <h1>Hello ${user.username}</h1>
+        <p>Please click the link to verify your account</p>
+        <a href="${process.env.DOMAIN}users/verify-now/${user.userVerificationCode}">Verify </a>
+      </div>
       `;
-      sendMail(
-        'sandurijal03@hotmail',
+      await sendMail(
+        user.email,
         'Verify Account',
         'Please verify account',
         html,
@@ -53,6 +63,75 @@ router.post(
       return res.status(201).json({
         success: true,
         message: 'Your account is created, please verify your email address',
+      });
+    } catch (err) {
+      return res.status(500).send({
+        success: false,
+        message: 'An error occurred',
+      });
+    }
+  },
+);
+
+/**
+ * @description to verify a new user's account
+ * @api /users/verify-now/verificationCode
+ * @access  Public <only via email>
+ * @type  GET
+ */
+router.get('/verify-now/:verificationCode', async (req, res) => {
+  try {
+    let { verificationCode } = req.params;
+    let user = await User.findOne({ verificationCode });
+    if (user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized access. Invalid verification code',
+      });
+    }
+    user.verified = true;
+    user.verificationCode = undefined;
+    await user.save();
+    return res.sendFile(
+      join(__dirname, '../template/verification-success.html'),
+    );
+  } catch (err) {
+    return res.send(join(__dirname, '../template/errors.html'));
+  }
+});
+
+/**
+ * @description to authenticate a user and get authenticate token
+ * @api /users/api/authenticate
+ * @access  Public
+ * @type  POST
+ */
+router.post(
+  '/api/authenticate',
+  AuthenticateValidation,
+  Validator,
+  async (req, res) => {
+    try {
+      let { username, password } = req.body;
+      let user = await User.findOne({ username });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Username not found',
+        });
+      }
+
+      if (await user.comparePassword(password)) {
+        return res.status(404).json({
+          success: false,
+          message: 'Incorrect Password',
+        });
+      }
+      let token = await user.generateJWT();
+      return res.status(200).json({
+        success: true,
+        user: user.getUserInfo(),
+        message: 'You are now logged in',
       });
     } catch (err) {
       return res.status(500).send({

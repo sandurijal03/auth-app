@@ -5,5 +5,13 @@ Content-Type: application/json
  "name": "sandip rijal",
  "username": "sandy",
  "password": "1234567890",
- "email": "sandip@example.com"
+ "email": "sandurijal03@hotmail.com"
+}
+
+###
+POST http://localhost:3001/users/api/login
+Content-Type: application/json
+
+{
+  "username": "sandy"
 }

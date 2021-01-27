@@ -13,5 +13,5 @@ const password = check(
   min: 6,
 });
 
-export const RegisterValidations = [name, username, email, password];
+export const RegisterValidation = [name, username, email, password];
 export const AuthenticateValidation = [username, password];
