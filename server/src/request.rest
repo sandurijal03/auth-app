@@ -9,10 +9,14 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:3001/users/api/login
+POST http://localhost:3001/users/api/authenticate
 Content-Type: application/json
 
 {
   "username": "sandy",
   "password": "1234567890"
-}
+} 
+
+###
+GET http://localhost:3001/users/api/authenticate
+Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNhbmR5IiwiZW1haWwiOiJzYW5kdXJpamFsMDNAZ21haWwuY29tIiwibmFtZSI6InNhbmRpcCByaWphbCIsImlkIjoiNjAxNGRmNjVhNjViOTQ3N2JkM2FjZjk1IiwiaWF0IjoxNjExOTgyNjQ1LCJleHAiOjE2MTI1ODc0NDV9.ACzBvWtB-AiOiLcSGozjcpLn3gnTIVc2ml48fFX0aUI"

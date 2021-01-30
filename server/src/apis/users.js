@@ -5,6 +5,7 @@ import Validator from '../middlewares/validator-middleware';
 import { randomBytes } from 'crypto';
 import sendMail from '../functions/email-sender';
 import { join } from 'path';
+import { userAuth } from '../middlewares/auth-guard';
 
 const router = Router();
 
@@ -142,5 +143,18 @@ router.post(
     }
   },
 );
+
+/**
+ * @description to authenticate users profiile
+ * @api /users/api/authenticate
+ * @access  Private
+ * @type  GET
+ */
+
+router.get('/api/authenticate', userAuth, async (req, res) => {
+  return res.json({
+    user: req.user,
+  });
+});
 
 export default router;
