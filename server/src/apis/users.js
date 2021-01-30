@@ -51,7 +51,7 @@ router.post(
       <div>
         <h1>Hello ${user.username}</h1>
         <p>Please click the link to verify your account</p>
-        <a href="${process.env.DOMAIN}users/verify-now/${user.userVerificationCode}">Verify </a>
+        <a href=${process.env.APP_DOMAIN}users/verify-now/${user.verificationCode}>Verify </a>
       </div>
       `;
       await sendMail(
@@ -83,7 +83,7 @@ router.get('/verify-now/:verificationCode', async (req, res) => {
   try {
     let { verificationCode } = req.params;
     let user = await User.findOne({ verificationCode });
-    if (user) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized access. Invalid verification code',
@@ -93,10 +93,10 @@ router.get('/verify-now/:verificationCode', async (req, res) => {
     user.verificationCode = undefined;
     await user.save();
     return res.sendFile(
-      join(__dirname, '../template/verification-success.html'),
+      join(__dirname, '../templates/verification-success.html'),
     );
   } catch (err) {
-    return res.send(join(__dirname, '../template/errors.html'));
+    return res.send(join(__dirname, '../templates/errors.html'));
   }
 });
 
@@ -121,8 +121,8 @@ router.post(
         });
       }
 
-      if (await user.comparePassword(password)) {
-        return res.status(404).json({
+      if (!(await user.comparePassword(password))) {
+        return res.status(401).json({
           success: false,
           message: 'Incorrect Password',
         });
@@ -131,6 +131,7 @@ router.post(
       return res.status(200).json({
         success: true,
         user: user.getUserInfo(),
+        token: `Bearer ${token}`,
         message: 'You are now logged in',
       });
     } catch (err) {

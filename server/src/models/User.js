@@ -61,7 +61,7 @@ userSchema.methods.generateJWT = async function () {
     name: this.name,
     id: this._id,
   };
-  return await sign(payload, process.env.SECRET, { expiresIn: '1w' });
+  return await sign(payload, process.env.APP_SECRET, { expiresIn: '1w' });
 };
 
 userSchema.methods.generatePasswordReset = function () {

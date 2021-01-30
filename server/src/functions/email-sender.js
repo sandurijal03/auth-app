@@ -5,8 +5,8 @@ sgMail.setApiKey(process.env.API_KEY);
 const sendMail = async (email, subject, text, html) => {
   try {
     const msg = {
-      to: email,
       from: process.env.API_HOST_EMAIL,
+      to: email,
       subject,
       text,
       html,
@@ -15,7 +15,7 @@ const sendMail = async (email, subject, text, html) => {
     await sgMail.send(msg);
     console.log('mail sent');
   } catch (err) {
-    console.log('ERROR MAILING: ', err.messag);
+    console.log('ERROR MAILING: ', err.response.body.errors);
   } finally {
     return;
   }
