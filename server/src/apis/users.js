@@ -1,10 +1,15 @@
+import { randomBytes } from 'crypto';
 import { Router } from 'express';
-import { AuthenticateValidation, RegisterValidation } from '../validators';
+import { join } from 'path';
+
+import {
+  AuthenticateValidation,
+  RegisterValidation,
+  ResetPassword,
+} from '../validators';
 import { User } from '../models';
 import Validator from '../middlewares/validator-middleware';
-import { randomBytes } from 'crypto';
 import sendMail from '../functions/email-sender';
-import { join } from 'path';
 import { userAuth } from '../middlewares/auth-guard';
 
 const router = Router();
@@ -155,6 +160,133 @@ router.get('/api/authenticate', userAuth, async (req, res) => {
   return res.json({
     user: req.user,
   });
+});
+
+/**
+ * @description to initiate password reset
+ * @api /users/reset-password/:resetPasswordToken
+ * @access  Restricted vie email
+ * @type  PUT
+ */
+
+router.put(
+  '/api/reset-password',
+  ResetPassword,
+  Validator,
+  async (req, res) => {
+    try {
+      let { email } = req.body;
+      let user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User with email is not found',
+        });
+      }
+      user.generatePasswordReset();
+      await user.save();
+      // sent the password reset link in your email
+      let html = `
+      <div>
+        <h1>Hello ${user.username}</h1>
+        <p>Please click the link to reset your password</p>
+        <p>If the password reset request is not created by your then you can ignore the email</p>
+        <a href=${process.env.APP_DOMAIN}users/reset-password-now/${user.resetPasswordToken}>Verify </a>
+      </div>
+      `;
+      await sendMail(
+        user.email,
+        'Verify Account',
+        'Please verify account',
+        html,
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Password reset link is send to your email.',
+      });
+    } catch (err) {
+      return res.status(500).send({
+        success: false,
+        message: 'An error occurred',
+      });
+    }
+  },
+);
+
+/**
+ * @description To resnder reset password page
+ * @api /users/reset-password/:resetPasswordToken
+ * @access Restricted via email
+ * @type GET
+ */
+router.get('/reset-password-now/:resetPasswordToken', async (req, res) => {
+  try {
+    let { resetPasswordToken } = req.params;
+    let user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpiresIn: { $gt: Date.now() },
+    });
+    if (!user) {
+      return res.status(401).json({
+        status: false,
+        message: 'Password reset token is invalid or  has expired',
+      });
+    }
+    return res.sendFile(join(__dirname, '../templates/password-reset.html'));
+  } catch (err) {
+    return res.sendFile(join(__dirname, '../templates/errors.html'));
+  }
+});
+
+/**
+ * @description To reset the password
+ * @api /users/api/reset-password-now
+ * @access Restricted via email
+ * @type POST
+ */
+router.post('/api/reset-password-now', async (req, res) => {
+  try {
+    let { resetPasswordToken, password } = req.body;
+    let user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpiresIn: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password reset token is invalid or has expired',
+      });
+    }
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiresIn = undefined;
+
+    await user.save();
+
+    // Send notification email about the password reset successfull process
+    let html = `
+        <div>
+            <h1>Hello, ${user.username}</h1>
+            <p>Your password is resetted successfully.</p>
+            <p>If this rest is not done by you then you can contact our team.</p>
+        </div>
+      `;
+    await sendMail(
+      user.email,
+      'Reset Password Successful',
+      'Your password is changed.',
+      html,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        'Your password reset request is complete and your password is resetted successfully. Login into your account with your new password.',
+    });
+  } catch (err) {
+    return res.sendFile(join(__dirname, '../templates/errors.html'));
+  }
 });
 
 export default router;

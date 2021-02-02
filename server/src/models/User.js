@@ -35,7 +35,7 @@ const userSchema = new Schema(
       type: String,
       required: false,
     },
-    requiredPasswordExpiresIn: {
+    resetPasswordExpiresIn: {
       type: Date,
       required: false,
     },
@@ -65,7 +65,7 @@ userSchema.methods.generateJWT = async function () {
 };
 
 userSchema.methods.generatePasswordReset = function () {
-  this.requiredPasswordExpiresIn = Date.now() + 360000;
+  this.resetPasswordExpiresIn = Date.now() + 36000000;
   this.resetPasswordToken = randomBytes(20).toString('hex');
 };
 
